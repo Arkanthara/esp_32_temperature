@@ -23,7 +23,7 @@ void event_handler(void * event_handler_arg, esp_event_base_t event_base, int32_
 }
 
 
-void connect_wifi(char * ssid, char * password)
+void connect_wifi(void)
 {
 	// Initialize stack for tcp
 	ESP_ERROR_CHECK(esp_netif_init());
@@ -32,7 +32,7 @@ void connect_wifi(char * ssid, char * password)
 	esp_netif_create_default_wifi_sta();
 
 
-	// Create event loop for handler's management.
+	// Create event loop for handler's management
 	ESP_ERROR_CHECK(esp_event_loop_create_default());
 
 	// Are this lines usefull for the rest of the programm ??? I try to comment and I will see if it run...
@@ -54,13 +54,10 @@ void connect_wifi(char * ssid, char * password)
 	// Create a config for wifi
 	wifi_config_t config = {
 		.sta = {
-			.ssid = ssid,
-			.password = password,
+			.ssid = "Livebox-4130",
+			.password = "LrKkE5HeSixowpGgb",
 		},
 	};
-
-	// Set the configuration to wifi
-	ESP_ERROR_CHECK(esp_wifi_set_config(&config));
 
 	// Start wifi
 	ESP_ERROR_CHECK(esp_wifi_start());
