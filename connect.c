@@ -1,7 +1,13 @@
 #include "esp_wifi.h"
 #include "esp_netif.h"
 #include "esp_log.h"
+#include "freertos/semphr.h"
 
+#define WIFI_SSID "Livebox-4130"
+#define WIFI_PASSWORD "LrKkE5HeSixXowpGgb"
+#define WAIT_TIME_FOR_CONNECTION 10000
+
+SemaphoreHandle_t semaphore = NULL;
 
 void event_handler(void * event_handler_arg, esp_event_base_t event_base, int32_t event_id, void * event_data)
 {
@@ -14,17 +20,37 @@ void event_handler(void * event_handler_arg, esp_event_base_t event_base, int32_
 				break;
 			case WIFI_EVENT_STA_START:
 				ESP_LOGI("Wifi Status", "Wifi start");
+				ESP_ERROR_CHECK(esp_wifi_connect());
+				break;
+			case WIFI_EVENT_STA_CONNECTED:
+				ESP_LOGI("Wifi Status", "Connected");
 				break;
 			default:
 				break;
+		}
+	}
+	else
+	{
+		ESP_LOGI("IP", "We have an ip address");
+		if (xSemaphoreGive(semaphore) != pdTRUE)
+		{
+			ESP_LOGE("Semaphore", "We can't give semaphore up");
 		}
 	}
 
 }
 
 
-void connect_wifi(char * ssid, char * password)
+void connect_wifi(void)
 {
+	// Create binary semaphore
+	semaphore = xSemaphoreCreateBinary();
+	if (semaphore == NULL)
+	{
+		ESP_LOGE("Semaphore", "Creation of semaphore failed");
+		return;
+	}
+
 	// Initialize stack for tcp
 	ESP_ERROR_CHECK(esp_netif_init());
 
@@ -54,19 +80,23 @@ void connect_wifi(char * ssid, char * password)
 	// Create a config for wifi
 	wifi_config_t config = {
 		.sta = {
-			.ssid = ssid,
-			.password = password,
+			.ssid = WIFI_SSID,
+			.password = WIFI_PASSWORD,
 		},
 	};
 
 	// Set the configuration to wifi
-	ESP_ERROR_CHECK(esp_wifi_set_config(&config));
+	ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &config));
 
 	// Start wifi
 	ESP_ERROR_CHECK(esp_wifi_start());
 
-	// Wait semaphore which indicate that we have ip address
-	// xSemaphoreTake(semaphore, WAIT_TIME);
+	// Wait semaphore which indicate that we have ip address (add TickType_t cast ???)
+	if (xSemaphoreTake(semaphore, WAIT_TIME_FOR_CONNECTION / portTICK_PERIOD_MS) != pdTRUE)
+	{
+		ESP_LOGE("Semaphore", "Semaphore don't giving up");
+		return;
+	}
 
 	// Destroy event loop
 	ESP_ERROR_CHECK(esp_event_loop_delete_default());
