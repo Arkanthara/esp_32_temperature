@@ -1,9 +1,11 @@
 #include "esp_log.h"
 #include "esp_http_client.h"
 
-#define URL "http://20.103.43.247/cmp/api/v1/Sim"
-#define URL2 "https://df20e270-e352-4e0e-9d9d-7594db0f3c6e.mock.pstmn.io"
+#define URL2 "http://20.103.43.247/cmp/api/v1/Sim"
+#define URL "https://df20e270-e352-4e0e-9d9d-7594db0f3c6e.mock.pstmn.io"
 
+#define USERNAME "midonnet@ems-ch.com"
+#define PASSWORD "JbVeEdlCh32dV1!"
 
 char * buffer = NULL;
 int buffer_len = 0;
@@ -102,6 +104,8 @@ esp_http_client_handle_t http_init(void)
 	esp_http_client_config_t config = {
 		.url = URL,
 		.event_handler = http_event,
+		.username = USERNAME,
+		.password = PASSWORD,
 	};
 
 	// We initialize the connection
@@ -113,13 +117,18 @@ esp_http_client_handle_t http_init(void)
 	}
 
 	// Set method to POST
-	//ESP_ERROR_CHECK(esp_http_client_set_method(client, HTTP_METHOD_POST));
+	ESP_ERROR_CHECK(esp_http_client_set_method(client, HTTP_METHOD_POST));
 
 	// We open the connection
 	ESP_ERROR_CHECK(esp_http_client_open(client, 0));
 
 	// Fetch headers
-	ESP_ERROR_CHECK(esp_http_client_fetch_headers(client));
+	int error = esp_http_client_fetch_headers(client);
+	if (error == -1)
+	{
+		ESP_LOGE("HTTP Headers", "Can't fetch headers");
+		return client;
+	}
 
 	// Read all response of server
 	http_read(client);
