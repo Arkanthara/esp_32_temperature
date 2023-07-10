@@ -1,8 +1,9 @@
 #include "esp_log.h"
 #include "esp_http_client.h"
+#include "esp_crt_bundle.h"
 
 #define URL2 "http://20.103.43.247/cmp/api/v1/Sim"
-#define URL "https://df20e270-e352-4e0e-9d9d-7594db0f3c6e.mock.pstmn.io"
+#define URL "https://df20e270-e352-4e0e-9d9d-7594db0f3c6e.mock.pstmn.io/health"
 
 #define USERNAME "midonnet@ems-ch.com"
 #define PASSWORD "JbVeEdlCh32dV1!"
@@ -104,9 +105,14 @@ esp_http_client_handle_t http_init(void)
 	esp_http_client_config_t config = {
 		.url = URL,
 		.event_handler = http_event,
+		.transport_type = HTTP_TRANSPORT_OVER_SSL,
+		.crt_bundle_attach = esp_crt_bundle_attach,
 		.username = USERNAME,
 		.password = PASSWORD,
 	};
+
+	// We attach an enable use of a bundle for certificate verification
+	//ESP_ERROR_CHECK(esp_crt_bundle_attach(&config));
 
 	// We initialize the connection
 	esp_http_client_handle_t client = esp_http_client_init(&config);
@@ -117,7 +123,7 @@ esp_http_client_handle_t http_init(void)
 	}
 
 	// Set method to POST
-	ESP_ERROR_CHECK(esp_http_client_set_method(client, HTTP_METHOD_POST));
+	ESP_ERROR_CHECK(esp_http_client_set_method(client, HTTP_METHOD_GET));
 
 	// We open the connection
 	ESP_ERROR_CHECK(esp_http_client_open(client, 0));
