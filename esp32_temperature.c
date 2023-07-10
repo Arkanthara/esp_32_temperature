@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "nvs_flash.h"
 #include "esp_log.h"
-#include "connect.h"
+#include "connect/connect.h"
 
 void app_main(void)
 {
