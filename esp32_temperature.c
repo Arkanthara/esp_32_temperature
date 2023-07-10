@@ -12,5 +12,6 @@ void app_main(void)
 		ESP_LOGE("NVS Initialisation", "Failed to initialize non volatile storage");
 		return;
 	}
-	connect_wifi();
+	esp_netif_t * netif = connect_wifi();
+	disconnect_wifi(netif);
 }

@@ -3,9 +3,13 @@
 #include "esp_log.h"
 #include "freertos/semphr.h"
 
-#define WIFI_SSID "Livebox-4130"
-#define WIFI_PASSWORD "LrKkE5HeSixXowpGgb"
+// #define WIFI_SSID "Livebox-4130"
+// #define WIFI_PASSWORD "LrKkE5HeSixXowpGgb"
+#define WIFI_SSID "WIFI_Mobile"
+#define WIFI_PASSWORD "428fdcf3d44d5e92a54d1ca5579d21416be03291895184d724abf652f24a"
+#define NUMBER_OF_TRY_FOR_RECONNECTION 5
 #define WAIT_TIME_FOR_CONNECTION 10000
+int current_try_for_reconnection = 0;
 
 SemaphoreHandle_t semaphore = NULL;
 
@@ -17,6 +21,19 @@ void event_handler(void * event_handler_arg, esp_event_base_t event_base, int32_
 		{
 			case WIFI_EVENT_STA_DISCONNECTED:
 				ESP_LOGE("Connection Status", "Disconnected");
+				if (current_try_for_reconnection < NUMBER_OF_TRY_FOR_RECONNECTION)
+				{
+					int error = esp_wifi_connect();
+					if (error == ESP_ERR_WIFI_NOT_STARTED)
+					{
+						ESP_LOGE("Wifi Status", "Wifi stop");
+					}
+					current_try_for_reconnection ++;
+				}
+				else
+				{
+					ESP_LOGE("Connection Status", "Connection failed");
+				}
 				break;
 			case WIFI_EVENT_STA_START:
 				ESP_LOGI("Wifi Status", "Wifi start");
@@ -24,6 +41,7 @@ void event_handler(void * event_handler_arg, esp_event_base_t event_base, int32_
 				break;
 			case WIFI_EVENT_STA_CONNECTED:
 				ESP_LOGI("Wifi Status", "Connected");
+				current_try_for_reconnection = 0;
 				break;
 			default:
 				break;
@@ -41,25 +59,25 @@ void event_handler(void * event_handler_arg, esp_event_base_t event_base, int32_
 }
 
 
-void connect_wifi(void)
+esp_netif_t * connect_wifi(void)
 {
 	// Create binary semaphore
 	semaphore = xSemaphoreCreateBinary();
 	if (semaphore == NULL)
 	{
 		ESP_LOGE("Semaphore", "Creation of semaphore failed");
-		return;
+		return NULL;
 	}
 
 	// Initialize stack for tcp
 	ESP_ERROR_CHECK(esp_netif_init());
 
-	// Create stack for wifi station
-	esp_netif_create_default_wifi_sta();
-
 
 	// Create event loop for handler's management.
 	ESP_ERROR_CHECK(esp_event_loop_create_default());
+
+	// Create stack for wifi station... It initialize netif and register event handlers for default interfaces...
+	esp_netif_t * netif = esp_netif_create_default_wifi_sta();
 
 	// Are this lines usefull for the rest of the programm ??? I try to comment and I will see if it run...
 	// Create handlers for wifi
@@ -95,12 +113,18 @@ void connect_wifi(void)
 	if (xSemaphoreTake(semaphore, WAIT_TIME_FOR_CONNECTION / portTICK_PERIOD_MS) != pdTRUE)
 	{
 		ESP_LOGE("Semaphore", "Semaphore don't giving up");
-		return;
+		return netif;
 	}
 
-	// Destroy event loop
+	return netif;
+
+
+}
+
+void disconnect_wifi(esp_netif_t * netif)
+{
+	ESP_ERROR_CHECK(esp_wifi_stop());
+	esp_netif_destroy_default_wifi(netif);
+	ESP_ERROR_CHECK(esp_wifi_deinit());
 	ESP_ERROR_CHECK(esp_event_loop_delete_default());
-
-
-
 }
