@@ -20,6 +20,19 @@ void app_main(void)
 	float temp;
 	read_temp_sensor(&temp);
 	printf("Temperature read: %f\n", temp);
+	char buffer[6];
+	error = snprintf(buffer, sizeof(buffer), "%f", temp);
+	if (error < 0)
+	{
+		ESP_LOGE("Convert", "Failed to convert float to string");
+		stop_temp_sensor();
+		http_cleanup(client);
+		disconnect_wifi(netif);
+		return;
+	}
+	printf("Converted value: %s\n", buffer);
+	http_write(client, buffer, sizeof(buffer));
+//	esp_http_client_perform(client);
 	stop_temp_sensor();
 	http_cleanup(client);
 	disconnect_wifi(netif);

@@ -3,7 +3,7 @@
 #include "esp_crt_bundle.h"
 
 #define URL2 "http://20.103.43.247/cmp/api/v1/Sim"
-#define URL "https://df20e270-e352-4e0e-9d9d-7594db0f3c6e.mock.pstmn.io/health"
+#define URL "https://df20e270-e352-4e0e-9d9d-7594db0f3c6e.mock.pstmn.io/tempSensor"
 
 #define USERNAME "midonnet@ems-ch.com"
 #define PASSWORD "JbVeEdlCh32dV1!"
@@ -98,6 +98,11 @@ void http_write(esp_http_client_handle_t client, char * buffer, int buffer_len)
 	}
 }
 
+void http_post(esp_http_client_handle_t client, char * data, int data_len)
+{
+	ESP_ERROR_CHECK(esp_http_client_set_post_field(client, data, data_len));
+}
+
 
 esp_http_client_handle_t http_init(void)
 {
@@ -123,7 +128,7 @@ esp_http_client_handle_t http_init(void)
 	}
 
 	// Set method to POST
-	ESP_ERROR_CHECK(esp_http_client_set_method(client, HTTP_METHOD_GET));
+	ESP_ERROR_CHECK(esp_http_client_set_method(client, HTTP_METHOD_POST));
 
 	// We open the connection
 	ESP_ERROR_CHECK(esp_http_client_open(client, 0));
@@ -138,6 +143,8 @@ esp_http_client_handle_t http_init(void)
 
 	// Read all response of server
 	http_read(client);
+
+
 
 	return client;
 }
