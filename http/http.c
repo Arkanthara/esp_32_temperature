@@ -2,21 +2,12 @@
 #include "esp_http_client.h"
 
 #define URL "http://20.103.43.247/cmp/api/v1/Sim"
+#define URL2 "https://df20e270-e352-4e0e-9d9d-7594db0f3c6e.mock.pstmn.io"
+
 
 char * buffer = NULL;
 int buffer_len = 0;
 
-
-// Function for add \n at end of buffer
-void prepare_buffer_for_print(char * buffer, buffer_len)
-{
-	if (buffer[buffer_len - 1] != '\n')
-	{
-		buffer_len ++;
-		buffer = realloc(buffer, buffer_len * sizeof(char));
-		buffer[buffer_len - 1] = '\n';
-	}
-}
 
 // Function for treat event caused by http
 esp_err_t http_event(esp_http_client_event_t * event)
@@ -41,7 +32,8 @@ esp_err_t http_event(esp_http_client_event_t * event)
 			break;
 
 		case HTTP_EVENT_ON_FINISH:
-			ESP_LOGI("HTTP Data", "Http transfert is finished.\nThis is the data received:\n%s", prepare_buffer_for_print(buffer, buffer_len));
+			ESP_LOGI("HTTP Data", "Http transfert is finished.\nThis is the data received:");
+			write(1, buffer, buffer_len);
 			free(buffer);
 			buffer = NULL;
 			buffer_len = 0;
@@ -50,7 +42,8 @@ esp_err_t http_event(esp_http_client_event_t * event)
 		case HTTP_EVENT_DISCONNECTED:
 			if (buffer_len != 0)
 			{
-				ESP_LOGE("HTTP Status", "Disconnected. We don't read this data:\n%s", prepare_buffer_for_print(buffer, buffer_len));
+				ESP_LOGE("HTTP Status", "Disconnected. We don't read this data:");
+				write(1, buffer, buffer_len);
 				free(buffer);
 				buffer = NULL;
 				buffer_len = 0;
@@ -67,13 +60,14 @@ esp_err_t http_event(esp_http_client_event_t * event)
 	return ESP_OK;
 }
 
-
+// Function for read server response, and print then
 void http_read(esp_http_client_handle_t client)
 {
 	ESP_ERROR_CHECK(esp_http_client_flush_response(client, NULL));
 	if (esp_http_client_is_complete_data_received(client))
 	{
-		ESP_LOGI("HTTP Data", "Data have been received successfully.\nThis is the data received:\n%s", prepare_buffer_for_print(buffer, buffer_len));
+		ESP_LOGI("HTTP Data", "Data have been received successfully.\nThis is the data received:");
+		write(1, buffer, buffer_len);
 		free(buffer);
 		buffer = NULL;
 		buffer_len = 0;
@@ -117,6 +111,9 @@ esp_http_client_handle_t http_init(void)
 		ESP_LOGE("HTTP Initialization", "Failed");
 		return NULL;
 	}
+
+	// Set method to POST
+	//ESP_ERROR_CHECK(esp_http_client_set_method(client, HTTP_METHOD_POST));
 
 	// We open the connection
 	ESP_ERROR_CHECK(esp_http_client_open(client, 0));
