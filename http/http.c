@@ -25,6 +25,7 @@ esp_err_t http_event(esp_http_client_event_t * event)
 			ESP_LOGI("HTTP Status", "Connected");
 			break;
 
+		// When we got data, we register then in a buffer
 		case HTTP_EVENT_ON_DATA:
 			buffer_len += event->data_len;
 			buffer = realloc(buffer, sizeof(char) * buffer_len);
@@ -34,6 +35,7 @@ esp_err_t http_event(esp_http_client_event_t * event)
 			}
 			break;
 
+		// If we finish the exchange, we print data, and clean the buffer
 		case HTTP_EVENT_ON_FINISH:
 			ESP_LOGI("HTTP Data", "Http transfert is finished.\nThis is the data received:");
 			write(1, buffer, buffer_len);
@@ -42,6 +44,7 @@ esp_err_t http_event(esp_http_client_event_t * event)
 			buffer_len = 0;
 			break;
 
+		// If we don't read all data claimed, we read then and clean the buffer
 		case HTTP_EVENT_DISCONNECTED:
 			if (buffer_len != 0)
 			{
@@ -81,6 +84,7 @@ void http_read(esp_http_client_handle_t client)
 	}
 }
 
+// Function for send data to server
 void http_write(esp_http_client_handle_t client, char * buffer, int buffer_len)
 {
 	int length_written = esp_http_client_write(client, buffer, buffer_len);
@@ -98,12 +102,14 @@ void http_write(esp_http_client_handle_t client, char * buffer, int buffer_len)
 	}
 }
 
+
+// Function for post message to server
 void http_post(esp_http_client_handle_t client, char * data, int data_len)
 {
 	ESP_ERROR_CHECK(esp_http_client_set_post_field(client, data, data_len));
 }
 
-
+// Function for initialize connection to server
 esp_http_client_handle_t http_init(void)
 {
 	// We create the configuration for http connection
@@ -145,10 +151,12 @@ esp_http_client_handle_t http_init(void)
 	http_read(client);
 
 
-
+	// Return esp_http_client_handle_t
 	return client;
 }
 
+
+// Function for free all resouces 
 void http_cleanup(esp_http_client_handle_t client)
 {
 	ESP_ERROR_CHECK(esp_http_client_close(client));
