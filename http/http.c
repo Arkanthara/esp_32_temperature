@@ -104,10 +104,10 @@ void http_write(esp_http_client_handle_t client, char * buffer, int buffer_len)
 
 
 // Function for post message to server
-void http_post(esp_http_client_handle_t client, char * data, int data_len)
-{
-	ESP_ERROR_CHECK(esp_http_client_set_post_field(client, data, data_len));
-}
+// void http_post(esp_http_client_handle_t client, char * data, int data_len)
+// {
+// 	ESP_ERROR_CHECK(esp_http_client_set_post_field(client, data, data_len));
+// }
 
 
 // Function for fetch headers
@@ -122,6 +122,20 @@ void http_fetch_headers(esp_http_client_handle_t client)
 	{
 		http_read(client);
 	}
+}
+
+void http_open(esp_http_client_handle_t client, int write_len)
+{
+	// We open the connection and write all the things to write
+	ESP_ERROR_CHECK(esp_http_client_open(client, write_len));
+}
+
+void http_post(esp_http_client_handle_t client, char * buffer)
+{
+	ESP_ERROR_CHECK(esp_http_client_open(client, sizeof buffer - 1));
+	ESP_ERROR_CHECK(esp_http_client_write(client, buffer, sizeof buffer - 1));
+	http_fetch_headers(client);
+	ESP_ERROR_CHECK(esp_http_client_close(client));
 }
 
 
@@ -151,9 +165,6 @@ esp_http_client_handle_t http_init(void)
 
 	// Set method to POST
 	ESP_ERROR_CHECK(esp_http_client_set_method(client, HTTP_METHOD_POST));
-
-	// We open the connection
-	// ESP_ERROR_CHECK(esp_http_client_open(client, 0));
 
 	// Return esp_http_client_handle_t
 	return client;

@@ -43,15 +43,24 @@ void app_main(void)
 	}
 	printf("Converted value: %s\n", buffer);
 
-	// Send the value to the server
-	http_post(client, buffer, sizeof(buffer));
-	esp_http_client_perform(client);
+	ESP_ERROR_CHECK(esp_http_client_set_header(client, "content-type", "text/plain"));
 
-/* Loop for send each five seconds the sensor's temperature
+//	// Send the value to the server
+//	// http_post(client, buffer, sizeof(buffer));
+//	// esp_http_client_perform(client);
+//	http_open(client, sizeof buffer - 1);
+//	http_write(client, buffer, sizeof buffer);
+//	http_fetch_headers(client);
+//	// http_write(client, buffer, sizeof buffer);
+//	
+//	// Read server response
+//	// http_read(client);
+
+// Loop for send each five seconds the sensor's temperature
 	while (1)
 	{
 		char temp_sensor[6];
-		vTaskDelay(5000 / portTICK_PERIOD_MS);
+		vTaskDelay(2000 / portTICK_PERIOD_MS);
 		read_temp_sensor(&temp);
 		error = snprintf(temp_sensor, sizeof(temp_sensor), "%f", temp);
 		if (error < 1)
@@ -62,9 +71,9 @@ void app_main(void)
 			disconnect_wifi(netif);
 			return;
 		}
-		http_write(client, temp_sensor, sizeof(temp_sensor));
+		http_post(client, temp_sensor);
+		printf("\n");
 	}
-*/
 
 	// Stop sensor
 	stop_temp_sensor();
