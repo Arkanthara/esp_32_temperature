@@ -109,6 +109,22 @@ void http_post(esp_http_client_handle_t client, char * data, int data_len)
 	ESP_ERROR_CHECK(esp_http_client_set_post_field(client, data, data_len));
 }
 
+
+// Function for fetch headers
+void http_fetch_headers(esp_http_client_handle_t client)
+{
+	int error = esp_http_client_fetch_headers(client);
+	if (error == -1)
+	{
+		ESP_LOGE("HTTP Fetch", "Failed to fecth headers");
+	}
+	else
+	{
+		http_read(client);
+	}
+}
+
+
 // Function for initialize connection to server
 esp_http_client_handle_t http_init(void)
 {
@@ -137,19 +153,7 @@ esp_http_client_handle_t http_init(void)
 	ESP_ERROR_CHECK(esp_http_client_set_method(client, HTTP_METHOD_POST));
 
 	// We open the connection
-	ESP_ERROR_CHECK(esp_http_client_open(client, 0));
-
-	// Fetch headers
-	int error = esp_http_client_fetch_headers(client);
-	if (error == -1)
-	{
-		ESP_LOGE("HTTP Headers", "Can't fetch headers");
-		return client;
-	}
-
-	// Read all response of server
-	http_read(client);
-
+	// ESP_ERROR_CHECK(esp_http_client_open(client, 0));
 
 	// Return esp_http_client_handle_t
 	return client;

@@ -44,8 +44,9 @@ void app_main(void)
 	printf("Converted value: %s\n", buffer);
 
 	// Send the value to the server
-	http_write(client, buffer, sizeof(buffer));
-//	esp_http_client_perform(client);
+	http_post(client, buffer, sizeof(buffer));
+	esp_http_client_perform(client);
+
 /* Loop for send each five seconds the sensor's temperature
 	while (1)
 	{
