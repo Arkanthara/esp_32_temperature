@@ -42,6 +42,7 @@ esp_err_t http_event(esp_http_client_event_t * event)
 			free(buffer);
 			buffer = NULL;
 			buffer_len = 0;
+			printf("\n");
 			break;
 
 		// If we don't read all data claimed, we read then and clean the buffer
@@ -53,6 +54,7 @@ esp_err_t http_event(esp_http_client_event_t * event)
 				free(buffer);
 				buffer = NULL;
 				buffer_len = 0;
+				printf("\n");
 			}
 			else
 			{
@@ -77,6 +79,7 @@ void http_read(esp_http_client_handle_t client)
 		free(buffer);
 		buffer = NULL;
 		buffer_len = 0;
+		printf("\n");
 	}
 	else
 	{
@@ -130,11 +133,20 @@ void http_open(esp_http_client_handle_t client, int write_len)
 	ESP_ERROR_CHECK(esp_http_client_open(client, write_len));
 }
 
-void http_post(esp_http_client_handle_t client, char * buffer)
+void http_post(esp_http_client_handle_t client, char * buffer, int buffer_len)
 {
-	ESP_ERROR_CHECK(esp_http_client_open(client, sizeof buffer - 1));
-	ESP_ERROR_CHECK(esp_http_client_write(client, buffer, sizeof buffer - 1));
+	// I put -1 because there is a strange thing on the web with the '\n'
+
+	// We open http connection and indicate that we want write a message of size buffer_len - 1
+	ESP_ERROR_CHECK(esp_http_client_open(client, buffer_len - 1));
+
+	// We write message
+	http_write(client, buffer, buffer_len - 1);
+
+	// We fecth headers and read the server's response
 	http_fetch_headers(client);
+
+	// We close connection
 	ESP_ERROR_CHECK(esp_http_client_close(client));
 }
 
@@ -174,7 +186,7 @@ esp_http_client_handle_t http_init(void)
 // Function for free all resouces 
 void http_cleanup(esp_http_client_handle_t client)
 {
-	ESP_ERROR_CHECK(esp_http_client_close(client));
+	// ESP_ERROR_CHECK(esp_http_client_close(client));
 	ESP_ERROR_CHECK(esp_http_client_cleanup(client));
 }
 

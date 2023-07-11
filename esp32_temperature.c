@@ -4,6 +4,10 @@
 #include "connect/connect.h"
 #include "temperature_sensor/temperature.h"
 #include "http/http.h"
+#include <unistd.h>
+#include "freertos/task.h"
+
+#define TIME_PERIOD 2000
 
 void app_main(void)
 {
@@ -29,40 +33,24 @@ void app_main(void)
 	float temp;
 
 	// Read the value of the temperature sensor an convert it into string for sending to a server
-	read_temp_sensor(&temp);
-	printf("Temperature read: %f\n", temp);
-	char buffer[6];
-	error = snprintf(buffer, sizeof(buffer), "%f", temp);
-	if (error < 0)
-	{
-		ESP_LOGE("Convert", "Failed to convert float to string");
-		stop_temp_sensor();
-		http_cleanup(client);
-		disconnect_wifi(netif);
-		return;
-	}
-	printf("Converted value: %s\n", buffer);
+	
 
 	ESP_ERROR_CHECK(esp_http_client_set_header(client, "content-type", "text/plain"));
 
-//	// Send the value to the server
-//	// http_post(client, buffer, sizeof(buffer));
-//	// esp_http_client_perform(client);
-//	http_open(client, sizeof buffer - 1);
-//	http_write(client, buffer, sizeof buffer);
-//	http_fetch_headers(client);
-//	// http_write(client, buffer, sizeof buffer);
-//	
-//	// Read server response
-//	// http_read(client);
+	// Initialize time
+	TickType_t time = xTaskGetTickCount();
+
+	// Frequency
+	const TickType_t freq = TIME_PERIOD / portTICK_PERIOD_MS;
+
 
 // Loop for send each five seconds the sensor's temperature
 	while (1)
 	{
-		char temp_sensor[6];
-		vTaskDelay(2000 / portTICK_PERIOD_MS);
+		char buffer[6];
+		int buffer_len = 6;
 		read_temp_sensor(&temp);
-		error = snprintf(temp_sensor, sizeof(temp_sensor), "%f", temp);
+		int error = snprintf(buffer, buffer_len, "%f", temp);
 		if (error < 1)
 		{
 			ESP_LOGE("Convert", "Failed to convert float to string");
@@ -71,8 +59,12 @@ void app_main(void)
 			disconnect_wifi(netif);
 			return;
 		}
-		http_post(client, temp_sensor);
-		printf("\n");
+		http_post(client, buffer, buffer_len);
+		// vTaskDelay((TickType_t) TIME_PERIOD/portTICK_PERIOD_MS);
+		// vTaskSuspendAll();
+		vTaskDelayUntil(&time, freq);
+		//sleep(2);
+		//xTaskResumeAll();
 	}
 
 	// Stop sensor
