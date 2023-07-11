@@ -4,6 +4,10 @@
 #include "connect/connect.h"
 #include "temperature_sensor/temperature.h"
 #include "http/http.h"
+#include <unistd.h>
+#include "freertos/task.h"
+
+#define TIME_PERIOD 5000
 
 void app_main(void)
 {
@@ -24,36 +28,36 @@ void app_main(void)
 	// Init http connection
 	esp_http_client_handle_t client = http_init();
 
-	// Start temperature sensor
-	start_temp_sensor();
-	float temp;
-
 	// Read the value of the temperature sensor an convert it into string for sending to a server
-	read_temp_sensor(&temp);
-	printf("Temperature read: %f\n", temp);
-	char buffer[6];
-	error = snprintf(buffer, sizeof(buffer), "%f", temp);
-	if (error < 0)
-	{
-		ESP_LOGE("Convert", "Failed to convert float to string");
-		stop_temp_sensor();
-		http_cleanup(client);
-		disconnect_wifi(netif);
-		return;
-	}
-	printf("Converted value: %s\n", buffer);
+	
 
-	// Send the value to the server
-	http_post(client, buffer, sizeof(buffer));
-	esp_http_client_perform(client);
+	ESP_ERROR_CHECK(esp_http_client_set_header(client, "content-type", "text/plain"));
 
-/* Loop for send each five seconds the sensor's temperature
+	// Initialize time
+	// It's a variable that holds the time at which the task was last unblocked
+	// The variable is automatically updated within vTaskDelayUntil().
+	TickType_t time = xTaskGetTickCount();
+
+	// Frequency
+	const TickType_t freq = TIME_PERIOD / portTICK_PERIOD_MS;
+
+
+	// Loop for send each five seconds the sensor's temperature
 	while (1)
 	{
-		char temp_sensor[6];
-		vTaskDelay(5000 / portTICK_PERIOD_MS);
+		// Start temperature sensor
+		start_temp_sensor();
+
+		// Initialize variables
+		float temp;
+		char buffer[6];
+		int buffer_len = 6;
+
+		// Read temerature
 		read_temp_sensor(&temp);
-		error = snprintf(temp_sensor, sizeof(temp_sensor), "%f", temp);
+
+		// Format float to string
+		int error = snprintf(buffer, buffer_len, "%f", temp);
 		if (error < 1)
 		{
 			ESP_LOGE("Convert", "Failed to convert float to string");
@@ -62,12 +66,16 @@ void app_main(void)
 			disconnect_wifi(netif);
 			return;
 		}
-		http_write(client, temp_sensor, sizeof(temp_sensor));
-	}
-*/
 
-	// Stop sensor
-	stop_temp_sensor();
+		// Send temperature to server
+		http_post(client, buffer, buffer_len);
+
+		// Stop sensor
+		stop_temp_sensor();
+
+		// Wait the time indicated by macro TIME_PERIOD
+		vTaskDelayUntil(&time, freq);
+	}
 
 	// Free resources of http
 	http_cleanup(client);
