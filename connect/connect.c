@@ -5,20 +5,36 @@
 
 // #define WIFI_SSID "Livebox-4130"
 // #define WIFI_PASSWORD "LrKkE5HeSixXowpGgb"
+
+// Wifi ssid used for connection
 #define WIFI_SSID "WIFI_Mobile"
+
+// Wifi password
 #define WIFI_PASSWORD "428fdcf3d44d5e92a54d1ca5579d21416be03291895184d724abf652f24a"
+
+// Number of try for the connection for each disconnection
 #define NUMBER_OF_TRY_FOR_RECONNECTION 5
+
+// Time to wait before quit because connection is too slow
 #define WAIT_TIME_FOR_CONNECTION 10000
+
+// Number max of network that we can find with the scan
+#define SCAN_MAX_NUMBER 5
+
+// Indicate the current try for a reconnection
 int current_try_for_reconnection = 0;
 
+// Semaphore used for waiting an ip address
 SemaphoreHandle_t semaphore = NULL;
 
+// Function for take care of event send by wifi
 void event_handler(void * event_handler_arg, esp_event_base_t event_base, int32_t event_id, void * event_data)
 {
 	if (event_base == WIFI_EVENT)
 	{
 		switch(event_id)
 		{
+			// If wifi is disconnected and not stopped, we try to reconnect, else we indicate that wifi is stopped
 			case WIFI_EVENT_STA_DISCONNECTED:
 				ESP_LOGE("Connection Status", "Disconnected");
 				if (current_try_for_reconnection < NUMBER_OF_TRY_FOR_RECONNECTION)
@@ -49,6 +65,7 @@ void event_handler(void * event_handler_arg, esp_event_base_t event_base, int32_
 	}
 	else
 	{
+		// We give the semaphore up because we can use wifi now
 		ESP_LOGI("IP", "We have an ip address");
 		if (xSemaphoreGive(semaphore) != pdTRUE)
 		{
@@ -78,11 +95,6 @@ esp_netif_t * connect_wifi(void)
 
 	// Create stack for wifi station... It initialize netif and register event handlers for default interfaces...
 	esp_netif_t * netif = esp_netif_create_default_wifi_sta();
-
-	// Are this lines usefull for the rest of the programm ??? I try to comment and I will see if it run...
-	// Create handlers for wifi
-	// esp_event_handler_instance_t wifi_event;
-	// esp_event_handler_instance_t got_ip;
 
 	// Attach handlers to an action. Is it necessary to create this handlers ???
 	esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, event_handler, NULL, NULL);
@@ -121,10 +133,37 @@ esp_netif_t * connect_wifi(void)
 
 }
 
+// Function for scan and print networks
+void scan_wifi(void)
+{
+	// We scan networks
+	ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, true));
+	uint16_t num_wifi = SCAN_MAX_NUMBER;
+	wifi_ap_record_t wifi[SCAN_MAX_NUMBER];
+	uint16_t ap_found = 0;
+
+	// We get result
+	ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&num_wifi, wifi));
+
+	// We ask how many network are found
+	ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&ap_found));
+
+	// We print result
+	ESP_LOGI("Wifi Scan", "Scan result");
+	for (int i = 0; i < (int) ap_found && i < SCAN_MAX_NUMBER; i++)
+	{
+		ESP_LOGI("Wifi Scan", "SSID: %s", (char *) wifi[i].ssid);
+	}
+
+}
+
+// Function for disallocate resouces
 void disconnect_wifi(esp_netif_t * netif)
 {
 	ESP_ERROR_CHECK(esp_wifi_stop());
 	esp_netif_destroy_default_wifi(netif);
 	ESP_ERROR_CHECK(esp_wifi_deinit());
+
+	// We destroy event loop at the end because if we destroy it before, we couldn't see messages status...
 	ESP_ERROR_CHECK(esp_event_loop_delete_default());
 }
