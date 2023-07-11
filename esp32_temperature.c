@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include "freertos/task.h"
 
-#define TIME_PERIOD 2000
+#define TIME_PERIOD 5000
 
 void app_main(void)
 {
@@ -28,28 +28,35 @@ void app_main(void)
 	// Init http connection
 	esp_http_client_handle_t client = http_init();
 
-	// Start temperature sensor
-	start_temp_sensor();
-	float temp;
-
 	// Read the value of the temperature sensor an convert it into string for sending to a server
 	
 
 	ESP_ERROR_CHECK(esp_http_client_set_header(client, "content-type", "text/plain"));
 
 	// Initialize time
+	// It's a variable that holds the time at which the task was last unblocked
+	// The variable is automatically updated within vTaskDelayUntil().
 	TickType_t time = xTaskGetTickCount();
 
 	// Frequency
 	const TickType_t freq = TIME_PERIOD / portTICK_PERIOD_MS;
 
 
-// Loop for send each five seconds the sensor's temperature
+	// Loop for send each five seconds the sensor's temperature
 	while (1)
 	{
+		// Start temperature sensor
+		start_temp_sensor();
+
+		// Initialize variables
+		float temp;
 		char buffer[6];
 		int buffer_len = 6;
+
+		// Read temerature
 		read_temp_sensor(&temp);
+
+		// Format float to string
 		int error = snprintf(buffer, buffer_len, "%f", temp);
 		if (error < 1)
 		{
@@ -59,16 +66,16 @@ void app_main(void)
 			disconnect_wifi(netif);
 			return;
 		}
-		http_post(client, buffer, buffer_len);
-		// vTaskDelay((TickType_t) TIME_PERIOD/portTICK_PERIOD_MS);
-		// vTaskSuspendAll();
-		vTaskDelayUntil(&time, freq);
-		//sleep(2);
-		//xTaskResumeAll();
-	}
 
-	// Stop sensor
-	stop_temp_sensor();
+		// Send temperature to server
+		http_post(client, buffer, buffer_len);
+
+		// Stop sensor
+		stop_temp_sensor();
+
+		// Wait the time indicated by macro TIME_PERIOD
+		vTaskDelayUntil(&time, freq);
+	}
 
 	// Free resources of http
 	http_cleanup(client);

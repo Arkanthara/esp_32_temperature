@@ -106,13 +106,6 @@ void http_write(esp_http_client_handle_t client, char * buffer, int buffer_len)
 }
 
 
-// Function for post message to server
-// void http_post(esp_http_client_handle_t client, char * data, int data_len)
-// {
-// 	ESP_ERROR_CHECK(esp_http_client_set_post_field(client, data, data_len));
-// }
-
-
 // Function for fetch headers
 void http_fetch_headers(esp_http_client_handle_t client)
 {
@@ -163,9 +156,6 @@ esp_http_client_handle_t http_init(void)
 		.username = USERNAME,
 		.password = PASSWORD,
 	};
-
-	// We attach an enable use of a bundle for certificate verification
-	//ESP_ERROR_CHECK(esp_crt_bundle_attach(&config));
 
 	// We initialize the connection
 	esp_http_client_handle_t client = esp_http_client_init(&config);
