@@ -2,6 +2,7 @@
 #include "esp_netif.h"
 #include "esp_log.h"
 #include "freertos/semphr.h"
+#include "list.h"
 
 // #define WIFI_SSID "Livebox-4130"
 // #define WIFI_PASSWORD "LrKkE5HeSixXowpGgb"
@@ -78,6 +79,12 @@ void event_handler(void * event_handler_arg, esp_event_base_t event_base, int32_
 
 esp_netif_t * connect_wifi(void)
 {
+
+	Head * head = list_init();
+	list_add(head, "Test", "Gnyahaha");
+	list_add(head, "Coucou", "Salut");
+	list_print(head);
+
 	// Create binary semaphore
 	semaphore = xSemaphoreCreateBinary();
 	if (semaphore == NULL)

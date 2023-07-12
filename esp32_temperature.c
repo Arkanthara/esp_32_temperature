@@ -43,21 +43,21 @@ void app_main(void)
 
 
 	// Loop for send each five seconds the sensor's temperature
-	while (1)
-	{
-		// Start temperature sensor
-		start_temp_sensor();
-
+//	while (1)
+//	{
 		// Initialize variables
 		float temp;
 		char buffer[6];
 		int buffer_len = 6;
 
+		// Start temperature sensor
+		start_temp_sensor();
+
 		// Read temerature
 		read_temp_sensor(&temp);
 
 		// Format float to string
-		int error = snprintf(buffer, buffer_len, "%f", temp);
+		error = snprintf(buffer, buffer_len, "%f", temp);
 		if (error < 1)
 		{
 			ESP_LOGE("Convert", "Failed to convert float to string");
@@ -68,14 +68,17 @@ void app_main(void)
 		}
 
 		// Send temperature to server
-		http_post(client, buffer, buffer_len);
+//		http_post(client, buffer, buffer_len);
+		
+		// Print temp_sensor
+		printf("Temperature's sensor: %s\n", buffer);
 
 		// Stop sensor
 		stop_temp_sensor();
 
 		// Wait the time indicated by macro TIME_PERIOD
 		vTaskDelayUntil(&time, freq);
-	}
+//	}
 
 	// Free resources of http
 	http_cleanup(client);
