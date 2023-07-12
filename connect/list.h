@@ -2,7 +2,10 @@ typedef struct Item Item;
 
 typedef struct Data {
 	char * ssid;
+	uint8_t ssid_len;
+
 	char * password;
+	uint8_t password_len;
 } Data;
 
 typedef struct Item {

@@ -79,8 +79,11 @@ void event_handler(void * event_handler_arg, esp_event_base_t event_base, int32_
 
 esp_netif_t * connect_wifi(void)
 {
+	// I had to modify the file heap_tlsf.c like described here: https://github.com/espressif/esp-idf/issues/9087
 
 	Head * head = list_init();
+	uint freeRAM = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
+	ESP_LOGI("RAM", "free RAM is %d.", freeRAM);
 	list_add(head, "Test", "Gnyahaha");
 	list_add(head, "Coucou", "Salut");
 	list_print(head);

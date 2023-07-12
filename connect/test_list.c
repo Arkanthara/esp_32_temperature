@@ -2,7 +2,17 @@
 
 #include "list.h"
 
+#include <string.h>
 
+void test(void)
+{
+
+	char * salut = "coucou";
+	printf("size_salut: %d\n", strlen(salut));
+	char * yo = "salut";
+	strncpy(salut, yo, strlen(yo));
+	printf("Result = %s\n", salut);
+}
 
 void main(void)
 {
@@ -11,4 +21,6 @@ void main(void)
 	list_add(head, "Gnyahaha", "Blurps");
 	list_add(head, "PKLK", "Yooo");
 	list_print(head);
+	test();
+
 }
