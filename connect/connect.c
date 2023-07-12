@@ -8,10 +8,10 @@
 // #define WIFI_PASSWORD "LrKkE5HeSixXowpGgb"
 
 // Wifi ssid used for connection
-#define WIFI_SSID "WIFI_Mobile"
+// #define WIFI_SSID "WIFI_Mobile"
 
 // Wifi password
-#define WIFI_PASSWORD "428fdcf3d44d5e92a54d1ca5579d21416be03291895184d724abf652f24a"
+// #define WIFI_PASSWORD "428fdcf3d44d5e92a54d1ca5579d21416be03291895184d724abf652f24a"
 
 // Number of try for the connection for each disconnection
 #define NUMBER_OF_TRY_FOR_RECONNECTION 5
@@ -27,6 +27,9 @@ int current_try_for_reconnection = 0;
 
 // Semaphore used for waiting an ip address
 SemaphoreHandle_t semaphore = NULL;
+
+// List of ssid and password
+Head * head = list_init();
 
 // Function for take care of event send by wifi
 void event_handler(void * event_handler_arg, esp_event_base_t event_base, int32_t event_id, void * event_data)
@@ -81,11 +84,8 @@ esp_netif_t * connect_wifi(void)
 {
 	// I had to modify the file heap_tlsf.c like described here: https://github.com/espressif/esp-idf/issues/9087
 
-	Head * head = list_init();
-	uint freeRAM = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
-	ESP_LOGI("RAM", "free RAM is %d.", freeRAM);
-	list_add(head, "Test", "Gnyahaha");
-	list_add(head, "Coucou", "Salut");
+	list_add(head, "WIFI_Mobile", "428fdcf3d44d5e92a54d1ca5579d21416be03291895184d724abf652f24a");
+	list_add(head, "Test", "JbAeJdA!");
 	list_print(head);
 
 	// Create binary semaphore

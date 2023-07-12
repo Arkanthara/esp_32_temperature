@@ -85,3 +85,46 @@ void list_print(Head * head)
 		item = item->next;
 	}
 }
+
+// Function that return password for an ssid given
+char ** list_find(Head * head, char * ssid)
+{
+	// Create a pointer for browse our element
+	Item * item = head->head;
+
+	// Search for our element by browsing our list
+	while (item != NULL)
+	{
+		if (strncmp(item->data->ssid, ssid, item->data->ssid_len) == 0)
+		{
+			return item->data->password;
+		}
+		item = item->next;
+	}
+
+	printf("Error");
+
+	fprintf(stderr, "We don't find the item of ssid: %s\n", ssid);
+
+	// Return NULL if we don't find our element
+	return NULL;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

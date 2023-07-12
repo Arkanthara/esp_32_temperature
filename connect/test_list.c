@@ -21,6 +21,7 @@ void main(void)
 	list_add(head, "Gnyahaha", "Blurps");
 	list_add(head, "PKLK", "Yooo");
 	list_print(head);
-	test();
+	char * result = list_find(head, "Gnyahaha");
+	printf("%s\n", result);
 
 }

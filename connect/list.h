@@ -2,10 +2,10 @@ typedef struct Item Item;
 
 typedef struct Data {
 	char * ssid;
-	uint8_t ssid_len;
+	int ssid_len;
 
 	char * password;
-	uint8_t password_len;
+	int password_len;
 } Data;
 
 typedef struct Item {
@@ -22,3 +22,4 @@ typedef struct Head {
 Head * list_init(void);
 void list_add(Head * head, char * ssid, char * password);
 void list_print(Head * head);
+char ** list_find(Head * head, char * ssid);
