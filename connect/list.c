@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "list.h"
+#include "esp_log.h"
 
 
 // Function for initialize our chain list
@@ -43,6 +44,12 @@ Data * create_data(char *ssid, char * password)
 	strncpy(data->ssid, ssid, data->ssid_len);
 	strncpy(data->password, password, data->password_len);
 
+	// Add \0 at the end of chain
+	data->ssid = realloc(data->ssid, (data->ssid_len + 1) * sizeof(char));
+	data->ssid[data->ssid_len] = '\0';
+	data->password = realloc(data->password, (data->password_len + 1) * sizeof(char));
+	data->password[data->password_len] = '\0';
+
 	return data;
 
 }
@@ -60,8 +67,7 @@ void list_add(Head * head, char * ssid, char * password)
 	}
 
 	// Initialisation of our item
-	Item * item = NULL;
-	item = malloc(sizeof(Item));
+	Item * item = malloc(sizeof(Item));
 
 	// We put our item at the begining of our chain list
 	item->data = data;
@@ -86,8 +92,22 @@ void list_print(Head * head)
 	}
 }
 
+// Function for print item
+void item_print(Item * item)
+{
+	// We test if item isn't null
+	if (item == NULL)
+	{
+		ESP_LOGE("Item", "Item is null");
+		return;
+	}
+	write(1, "SSID: ", 6);
+	write(1, item->data->ssid, item->data->ssid_len);
+	write(1, "\n", 2);
+}
+
 // Function that return password for an ssid given
-char ** list_find(Head * head, char * ssid)
+Item * list_find(Head * head, char * ssid)
 {
 	// Create a pointer for browse our element
 	Item * item = head->head;
@@ -97,7 +117,7 @@ char ** list_find(Head * head, char * ssid)
 	{
 		if (strncmp(item->data->ssid, ssid, item->data->ssid_len) == 0)
 		{
-			return item->data->password;
+			return item;
 		}
 		item = item->next;
 	}

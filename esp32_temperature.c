@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include "nvs_flash.h"
 #include "esp_log.h"
+#include "connect/global.h"
+#include "connect/list.h"
 #include "connect/connect.h"
 #include "temperature_sensor/temperature.h"
 #include "http/http.h"
@@ -8,6 +10,10 @@
 #include "freertos/task.h"
 
 #define TIME_PERIOD 5000
+
+// Our global variables
+Head * head;
+Item * item;
 
 void app_main(void)
 {
@@ -19,11 +25,22 @@ void app_main(void)
 		return;
 	}
 
+	// Initialize our list of password and ssid
+	head = list_init();
+
+	// Initialize our current item
+	item = head->head;
+
+	// Add our network
+	list_add(head, "Test", "JbJeAdA!");
+	list_add(head, "WIFI_Mobile", "428fdcf3d44d5e92a54d1ca5579d21416be03291895184d724abf652f24a");
+	list_print(head);
+
 	// Initialize wifi and connect wifi
-	esp_netif_t * netif = connect_wifi();
+	esp_netif_t * netif = init_wifi();
 
 	// Scan networks
-	scan_wifi();
+	// scan_wifi();
 
 	// Init http connection
 	esp_http_client_handle_t client = http_init();
