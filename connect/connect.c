@@ -35,7 +35,7 @@ void connect_wifi(Item * item)
 {
 
 	// Create a config for wifi
-	wifi_config_t config;
+	wifi_config_t config = {};
 
 	printf("Len ssid: %d len password %d\n", item->data->ssid_len, item->data->password_len);
 	memset(config.sta.ssid, 0, sizeof(config.sta.ssid));
