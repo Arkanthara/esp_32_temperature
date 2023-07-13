@@ -32,9 +32,10 @@ void app_main(void)
 	item = head->head;
 
 	// Add our network
-	list_add(head, "Livebox-4130", "LrKkE5HeSixXowpGgb");
-	list_add(head, "Test", "JbJeAdA!");
-	list_add(head, "WIFI_Mobile", "428fdcf3d44d5e92a54d1ca5579d21416be03291895184d724abf652f24a");
+	list_add(head, "Livebox-4130", "LrKkE5HeSixXowpGgb", 1);
+	list_add(head, "Test", "JbAeJdA!",5);
+	list_add(head, "WIFI_Mobile", "428fdcf3d44d5e92a54d1ca5579d21416be03291895184d724abf652f24a",4);
+	list_add(head, "Nolan", "JbNdIlY!", 6);
 	list_print(head);
 
 	// Initialize wifi and connect wifi
@@ -42,6 +43,7 @@ void app_main(void)
 
 	// Scan networks
 	// scan_wifi();
+	scan_wifi(NULL, false);
 
 	// Init http connection
 	esp_http_client_handle_t client = http_init();
@@ -58,7 +60,7 @@ void app_main(void)
 
 	// Frequency
 	const TickType_t freq = TIME_PERIOD / portTICK_PERIOD_MS;
-
+/*
 
 	// Loop for send each five seconds the sensor's temperature
 //	while (1)
@@ -100,7 +102,10 @@ void app_main(void)
 
 	// Free resources of http
 	http_cleanup(client);
-
+*/
 	// Disconnect and free resources of wifi
 	disconnect_wifi(netif);
+
+	// Destroy list of networks
+	list_destroy(head);
 }
