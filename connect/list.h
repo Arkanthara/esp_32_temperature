@@ -28,6 +28,9 @@ Head * list_init(void);
 void list_add(Head * head, char * ssid, char * password, int priority);
 void list_print(Head * head);
 Item * list_find(Head * head, char * ssid);
+void list_delete_specific_item(Head * head, char * ssid);
+void list_destroy(Head * head);
+
 void item_print(Item * item);
 
 #endif

@@ -5,6 +5,6 @@
 
 esp_netif_t * init_wifi(void);
 void disconnect_wifi(esp_netif_t * netif);
-void scan_wifi(void);
+bool scan_wifi(Item * item, bool search);
 
 #endif

@@ -52,7 +52,7 @@ void connect_wifi(Item * item)
 
 
 // Function for scan and print networks
-bool scan_wifi(Item * item)
+bool scan_wifi(Item * item, bool search)
 {
 	// We scan networks
 	ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, true));
@@ -66,17 +66,35 @@ bool scan_wifi(Item * item)
 	// We ask how many network are found
 	ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&ap_found));
 
-	// We print result
-	ESP_LOGI("Wifi Scan", "Scan result");
-	for (int i = 0; i < (int) ap_found && i < SCAN_MAX_NUMBER; i++)
+	if (!search)
 	{
-		ESP_LOGI("Wifi Scan", "SSID: %s, len: %d", (char *) wifi[i].ssid, strlen((char *) wifi[i].ssid));
-		if (strncmp((char *) wifi[i].ssid, item->data->ssid, item->data->ssid_len) == 0)
+		// We print result
+		ESP_LOGI("Wifi Scan", "Scan result");
+		for (int i = 0; i < (int) ap_found && i < SCAN_MAX_NUMBER; i++)
 		{
-			ESP_LOGI("Wifi Scan", "Sopped because ssid %s found", item->data->ssid);
-			return true;
-		}
+			ESP_LOGI("Wifi Scan", "SSID: %s, len: %d", (char *) wifi[i].ssid, strlen((char *) wifi[i].ssid));
+//			if (strncmp((char *) wifi[i].ssid, item->data->ssid, item->data->ssid_len) == 0)
+//			{
+//				ESP_LOGI("Wifi Scan", "Sopped because ssid %s found", item->data->ssid);
+//				return true;
+//			}
 
+		}
+	}
+	else
+	{
+		while (item != NULL)
+		{
+			for (int i = 0; i < (int) ap_found && i < SCAN_MAX_NUMBER; i++)
+			{
+				if (strcmp((char *) wifi[i].ssid, item->data->ssid) == 0)
+				{
+					ESP_LOGI("Wifi Scan", "SSID found: %s", item->data->ssid);
+					return true;
+				}
+			}
+			item = item->next;
+		}
 	}
 	return false;
 
@@ -110,13 +128,12 @@ void event_handler(void * event_handler_arg, esp_event_base_t event_base, int32_
 			case WIFI_EVENT_STA_START:
 				ESP_LOGI("Wifi Status", "Wifi start");
 				item_print(item);
-				while ( ! scan_wifi(item) && item != NULL)
+				if (scan_wifi(item, true))
 				{
-					item = item->next;
+					ESP_LOGI("Item", "SSID: %s, len: %d", item->data->ssid, strlen(item->data->ssid));
+					item_print(item);
+					connect_wifi(item);
 				}
-				ESP_LOGI("Item", "SSID: %s, len: %d", item->data->ssid, strlen(item->data->ssid));
-				item_print(item);
-				connect_wifi(item);
 				break;
 			case WIFI_EVENT_STA_CONNECTED:
 				ESP_LOGI("Wifi Status", "Connected");

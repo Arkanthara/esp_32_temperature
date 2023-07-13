@@ -249,7 +249,7 @@ void list_destroy(Head * head)
 	free(head);
 
 	// We print that's ok
-	printf("That's ok for the destruction of our list\n");
+	printf("That's ok for the destruction of the list\n");
 }
 
 
