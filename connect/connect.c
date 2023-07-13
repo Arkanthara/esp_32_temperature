@@ -47,7 +47,23 @@ void connect_wifi(Item * item)
 	ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &config));
 
 	// connect to wifi
-	ESP_ERROR_CHECK(esp_wifi_connect());
+	int error  = esp_wifi_connect();
+	if (error == ESP_ERR_WIFI_PASSWORD)
+	{
+		ESP_LOGE("Wifi Connect", "Wrong password");
+	}
+	else if (error == ESP_ERR_WIFI_SSID)
+	{
+		ESP_LOGE("Wifi Connect", "Wrong ssid");
+	}
+	else if (error == ESP_ERR_WIFI_CONN)
+	{
+		ESP_LOGE("Wifi Connect", "Internal error has made crash the connection");
+	}
+	else if (error != ESP_OK)
+	{
+		ESP_LOGE("Wifi Connect", "Error when trying to connect to network: %s", esp_err_to_name(error));
+	}
 }
 
 

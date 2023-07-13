@@ -33,7 +33,7 @@ void app_main(void)
 
 	// Add our network
 	list_add(head, "Livebox-4130", "LrKkE5HeSixXowpGgb", 1);
-	list_add(head, "Test", "JbAeJdA!",5);
+	list_add(head, "Test", "JbAJdA!",5);
 	list_add(head, "WIFI_Mobile", "428fdcf3d44d5e92a54d1ca5579d21416be03291895184d724abf652f24a",4);
 	list_add(head, "Nolan", "JbNdIlY!", 6);
 	list_print(head);
