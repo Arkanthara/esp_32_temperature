@@ -55,7 +55,17 @@ void connect_wifi(Item * item)
 bool scan_wifi(Item * item, bool search)
 {
 	// We scan networks
-	ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, true));
+	int error = esp_wifi_scan_start(NULL, true);
+	if (error != ESP_OK && error != ESP_ERR_WIFI_NOT_STARTED)
+	{
+		ESP_LOGE("Wifi Scan", "Failed");
+		return false;
+	}
+	else if (error == ESP_ERR_WIFI_NOT_STARTED)
+	{
+		ESP_LOGE("Wifi Scan", "Wifi stop, so we can't scan network");
+		return false;
+	}
 	uint16_t num_wifi = SCAN_MAX_NUMBER;
 	wifi_ap_record_t wifi[SCAN_MAX_NUMBER];
 	uint16_t ap_found = 0;
@@ -113,6 +123,40 @@ void event_handler(void * event_handler_arg, esp_event_base_t event_base, int32_
 				ESP_LOGE("Connection Status", "Disconnected");
 				if (current_try_for_reconnection < NUMBER_OF_TRY_FOR_RECONNECTION)
 				{
+					if (current_try_for_reconnection == 0)
+					{
+						item = head->head;
+						if (scan_wifi(item, true))
+						{
+							item_print(item);
+							current_try_for_reconnection ++;
+							connect_wifi(item);
+						}
+						else
+						{
+							ESP_LOGE("Wifi Scan", "We don't find a network available with a known password");
+						}
+					}
+					else if (scan_wifi(item, true))
+					{
+						item_print(item);
+						current_try_for_reconnection ++;
+						connect_wifi(item);
+					}
+					else
+					{
+						item = head->head;
+						if (scan_wifi(item, true))
+						{
+							item_print(item);
+							current_try_for_reconnection ++;
+							connect_wifi(item);
+						}
+						else
+						{
+							ESP_LOGE("Wifi Scan", "We don't find a network available with a known password");
+						}
+					}
 					int error = esp_wifi_connect();
 					if (error == ESP_ERR_WIFI_NOT_STARTED)
 					{
