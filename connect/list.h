@@ -9,6 +9,8 @@ typedef struct Data {
 
 	char * password;
 	int password_len;
+
+	int priority;
 } Data;
 
 typedef struct Item {
@@ -23,7 +25,7 @@ typedef struct Head {
 
 
 Head * list_init(void);
-void list_add(Head * head, char * ssid, char * password);
+void list_add(Head * head, char * ssid, char * password, int priority);
 void list_print(Head * head);
 Item * list_find(Head * head, char * ssid);
 void item_print(Item * item);
