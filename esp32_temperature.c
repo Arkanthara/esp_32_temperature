@@ -84,7 +84,10 @@ void vTask_1(void * parameters)
 
 void vTask_2(void * parameters)
 {
-	connect_wifi_no_init();
+	while (1)
+	{
+		connect_wifi_no_init();
+	}
 }
 
 
@@ -140,6 +143,13 @@ void app_main(void)
 	}
 */
 	// Create task
+	error = xTaskCreate(vTask_2, "CONNECT", STACK_SIZE, NULL, tskIDLE_PRIORITY, &Task_2);
+	if (error != pdPASS)
+	{
+		ESP_LOGE("Task Creation", "Error when trying to create a task. %s", esp_err_to_name(error));
+		return;
+	}
+
 	error = xTaskCreate(vTask_1, "LOOP", STACK_SIZE, NULL, tskIDLE_PRIORITY, &Task_1);
 	if (error != pdPASS)
 	{
@@ -147,12 +157,7 @@ void app_main(void)
 		return;
 	}
 
-	error = xTaskCreate(vTask_2, "CONNECT", STACK_SIZE, NULL, tskIDLE_PRIORITY, &Task_2);
-	if (error != pdPASS)
-	{
-		ESP_LOGE("Task Creation", "Error when trying to create a task. %s", esp_err_to_name(error));
-		return;
-	}
+	// vTaskSuspend(Task_2);
 
 	// Delete our task
 //	vTaskDelete(xHandle);

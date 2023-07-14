@@ -28,6 +28,12 @@
 // Indicate the current try for a reconnection
 int current_try_for_reconnection = 0;
 
+// Indicate when wifi start
+bool wifi_start = false;
+
+// Indicate if we are in task_1 or in task_2
+bool task = false;
+
 // Semaphore used for waiting an ip address
 SemaphoreHandle_t semaphore = NULL;
 
@@ -42,7 +48,6 @@ void connect_wifi(Item * item)
 	// Create a config for wifi
 	wifi_config_t config = {};
 
-	printf("Len ssid: %d len password %d\n", item->data->ssid_len, item->data->password_len);
 	memset(config.sta.ssid, 0, sizeof(config.sta.ssid));
 	memset(config.sta.password, 0, sizeof(config.sta.password));
 	strncpy((char *)(config.sta.ssid), item->data->ssid, item->data->ssid_len);
@@ -75,7 +80,7 @@ void connect_wifi(Item * item)
 	else if (error == ESP_ERR_WIFI_NOT_STARTED)
 	{
 		ESP_LOGE("Wifi Connect", "Wifi not started");
-		ESP_ERROR_CHECK(esp_wifi_start());
+//		ESP_ERROR_CHECK(esp_wifi_start());
 		return;
 	}
 	else if (error != ESP_OK)
@@ -85,9 +90,12 @@ void connect_wifi(Item * item)
 
 	
 	// Wait semaphore which indicate that we have ip address (add TickType_t cast ???)
-	if (xSemaphoreTake(semaphore, WAIT_TIME_FOR_CONNECTION / portTICK_PERIOD_MS) != pdTRUE)
+	if (!wifi_start)
 	{
-		ESP_LOGE("Semaphore", "Semaphore don't giving up");
+		if (xSemaphoreTake(semaphore, WAIT_TIME_FOR_CONNECTION / portTICK_PERIOD_MS) != pdTRUE)
+		{
+			ESP_LOGE("Semaphore", "Semaphore don't giving up");
+		}
 	}
 }
 
@@ -95,7 +103,14 @@ void connect_wifi(Item * item)
 // Function for connect to wifi without allocate memory
 void connect_wifi_no_init(void)
 {
+	if (!task)
+	{
+		return;
+	}
+	vTaskSuspend(Task_1);
+	task = true;
 	connect_wifi(item);
+	task = false;
 	vTaskResume(Task_1);
 }
 
@@ -167,7 +182,10 @@ void event_handler(void * event_handler_arg, esp_event_base_t event_base, int32_
 		{
 			// If wifi is disconnected and not stopped, we try to reconnect, else we indicate that wifi is stopped
 			case WIFI_EVENT_STA_DISCONNECTED:
-//				vTaskSuspend(xHandle);
+				if (!task)
+				{
+					vTaskResume(Task_2);
+				}
 				ESP_LOGE("Connection Status", "Disconnected");
 				if (current_try_for_reconnection < NUMBER_OF_TRY_FOR_RECONNECTION)
 				{
@@ -251,7 +269,6 @@ void event_handler(void * event_handler_arg, esp_event_base_t event_base, int32_
 	{
 		// We give the semaphore up because we can use wifi now
 		ESP_LOGI("IP", "We have an ip address");
-//		vTaskResume(xHandle);
 		if (xSemaphoreGive(semaphore) != pdTRUE)
 		{
 			ESP_LOGE("Semaphore", "We can't give semaphore up");
@@ -297,15 +314,21 @@ esp_netif_t * init_wifi(void)
 	// Replace item at the beginning of the list
 	item = head->head;
 
-	// Start wifi
-//	ESP_ERROR_CHECK(esp_wifi_start());
+	// Indicate that wifi start
+	wifi_start = true;
 
-//	// Wait semaphore which indicate that we have ip address (add TickType_t cast ???)
-//	if (xSemaphoreTake(semaphore, WAIT_TIME_FOR_CONNECTION / portTICK_PERIOD_MS) != pdTRUE)
-//	{
-//		ESP_LOGE("Semaphore", "Semaphore don't giving up");
-//	}
-	connect_wifi(item);
+	// Start wifi
+	ESP_ERROR_CHECK(esp_wifi_start());
+
+	// Wait semaphore which indicate that we have ip address (add TickType_t cast ???)
+	if (xSemaphoreTake(semaphore, WAIT_TIME_FOR_CONNECTION / portTICK_PERIOD_MS) != pdTRUE)
+	{
+		ESP_LOGE("Semaphore", "Semaphore don't giving up");
+	}
+
+	// Indicate that wifi was started
+	wifi_start = false;
+//	connect_wifi(item);
 
 
 	return netif;
