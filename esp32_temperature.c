@@ -27,6 +27,16 @@ bool task = false;
 void vTask_1(void * client)
 {
 
+	// Initialize wifi and connect wifi
+	esp_netif_t * netif = init_wifi();
+
+	// Scan networks
+	// scan_wifi();
+	scan_wifi(NULL, false);
+
+	// Init http connection
+//	esp_http_client_handle_t client = http_init();
+
 	// Initialize time
 	// It's a variable that holds the time at which the task was last unblocked
 	// The variable is automatically updated within vTaskDelayUntil().
@@ -56,7 +66,7 @@ void vTask_1(void * client)
 			ESP_LOGE("Convert", "Failed to convert float to string");
 			stop_temp_sensor();
 //			http_cleanup(client);
-//			disconnect_wifi(netif);
+			disconnect_wifi(netif);
 			return;
 		}
 
@@ -73,6 +83,14 @@ void vTask_1(void * client)
 		vTaskDelayUntil(&time, freq);
 	}
 
+	// Free resources of http
+//	http_cleanup(client);
+
+	// Disconnect and free resources of wifi
+	disconnect_wifi(netif);
+
+	// Destroy list of networks
+	list_destroy(head);
 }
 
 void vTask_2(void * parameters)
@@ -117,18 +135,6 @@ void app_main(void)
 	list_add(head, "Nolan", "JbNdIlY!", 6);
 	list_print(head);
 
-	// Initialize wifi and connect wifi
-	esp_netif_t * netif = init_wifi();
-
-	// Scan networks
-	// scan_wifi();
-	scan_wifi(NULL, false);
-
-	// Init http connection
-//	esp_http_client_handle_t client = http_init();
-
-	// Read the value of the temperature sensor an convert it into string for sending to a server
-	
 
 //	ESP_ERROR_CHECK(esp_http_client_set_header(client, "content-type", "text/plain"));
 
@@ -138,12 +144,4 @@ void app_main(void)
 	error = xTaskCreate(vTask_1, "LOOP", STACK_SIZE, NULL, tskIDLE_PRIORITY, &Task_1);
 	configASSERT(Task_1);
 
-	// Free resources of http
-//	http_cleanup(client);
-
-	// Disconnect and free resources of wifi
-//	disconnect_wifi(netif);
-
-	// Destroy list of networks
-//	list_destroy(head);
 }
