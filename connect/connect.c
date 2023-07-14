@@ -2,6 +2,7 @@
 #include "esp_wifi.h"
 #include "esp_netif.h"
 #include "esp_log.h"
+#include "esp_err.h"
 #include "freertos/semphr.h"
 #include "global.h"
 #include "list.h"
@@ -44,15 +45,22 @@ void connect_wifi(Item * item)
 	strncpy((char *)(config.sta.password), item->data->password, item->data->password_len);
 
 	// Set the configuration to wifi
-	ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &config));
-
-	// connect to wifi
-	int error  = esp_wifi_connect();
+	int error = esp_wifi_set_config(WIFI_IF_STA, &config);
 	if (error == ESP_ERR_WIFI_PASSWORD)
 	{
-		ESP_LOGE("Wifi Connect", "Wrong password");
+		// It don't detect wrong password ...
+		ESP_LOGE("Wifi Config", "Wrong password");
+		return;
 	}
-	else if (error == ESP_ERR_WIFI_SSID)
+	else if (error != ESP_OK)
+	{
+		ESP_LOGE("Wifi Config", "Error: %s", esp_err_to_name(error));
+		return;
+	}
+
+	// connect to wifi
+	error  = esp_wifi_connect();
+	if (error == ESP_ERR_WIFI_SSID)
 	{
 		ESP_LOGE("Wifi Connect", "Wrong ssid");
 	}
@@ -92,6 +100,7 @@ Item * scan_wifi(Item * item, bool search)
 	// We ask how many network are found
 	ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&ap_found));
 
+	// If we just want to scan wifi, we print result
 	if (!search)
 	{
 		// We print result
@@ -99,14 +108,11 @@ Item * scan_wifi(Item * item, bool search)
 		for (int i = 0; i < (int) ap_found && i < SCAN_MAX_NUMBER; i++)
 		{
 			ESP_LOGI("Wifi Scan", "SSID: %s, len: %d", (char *) wifi[i].ssid, strlen((char *) wifi[i].ssid));
-//			if (strncmp((char *) wifi[i].ssid, item->data->ssid, item->data->ssid_len) == 0)
-//			{
-//				ESP_LOGI("Wifi Scan", "Sopped because ssid %s found", item->data->ssid);
-//				return true;
-//			}
 
 		}
 	}
+
+	// Else we search by priority order if an item has a ssid like in scan wifi
 	else
 	{
 		while (item != NULL)

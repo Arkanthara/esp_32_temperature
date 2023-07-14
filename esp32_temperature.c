@@ -33,7 +33,7 @@ void app_main(void)
 
 	// Add our network
 	list_add(head, "Livebox-4130", "LrKkE5HeSixXowpGgb", 1);
-	list_add(head, "Test", "JbAJdA!",5);
+	list_add(head, "Test", "JbAeJdA!",5);
 	list_add(head, "WIFI_Mobile", "428fdcf3d44d5e92a54d1ca5579d21416be03291895184d724abf652f24a",4);
 	list_add(head, "Nolan", "JbNdIlY!", 6);
 	list_print(head);
@@ -60,7 +60,7 @@ void app_main(void)
 
 	// Frequency
 	const TickType_t freq = TIME_PERIOD / portTICK_PERIOD_MS;
-/*
+
 
 	// Loop for send each five seconds the sensor's temperature
 //	while (1)
@@ -82,7 +82,7 @@ void app_main(void)
 		{
 			ESP_LOGE("Convert", "Failed to convert float to string");
 			stop_temp_sensor();
-			http_cleanup(client);
+//			http_cleanup(client);
 			disconnect_wifi(netif);
 			return;
 		}
@@ -101,8 +101,8 @@ void app_main(void)
 //	}
 
 	// Free resources of http
-	http_cleanup(client);
-*/
+//	http_cleanup(client);
+
 	// Disconnect and free resources of wifi
 	disconnect_wifi(netif);
 
