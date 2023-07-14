@@ -10,19 +10,31 @@
 #include "freertos/task.h"
 
 #define TIME_PERIOD 5000
+#define STACK_SIZE 4096
 
 // Our global variables
 Head * head;
 Item * item;
 
 // Our task
-Task_Handle_t Task_1 = NULL;
-Task_Handle_t Task_2 = NULL;
+TaskHandle_t Task_1 = NULL;
+TaskHandle_t Task_2 = NULL;
+
+bool task = false;
 
 
 // We must look after the void * client
 void vTask_1(void * client)
 {
+
+	// Initialize time
+	// It's a variable that holds the time at which the task was last unblocked
+	// The variable is automatically updated within vTaskDelayUntil().
+	TickType_t time = xTaskGetTickCount();
+
+	// Frequency
+	const TickType_t freq = TIME_PERIOD / portTICK_PERIOD_MS;
+
 	// Loop for send each five seconds the sensor's temperature
 	while (1)
 	{
@@ -38,13 +50,13 @@ void vTask_1(void * client)
 		read_temp_sensor(&temp);
 
 		// Format float to string
-		error = snprintf(buffer, buffer_len, "%f", temp);
+		int error = snprintf(buffer, buffer_len, "%f", temp);
 		if (error < 1)
 		{
 			ESP_LOGE("Convert", "Failed to convert float to string");
 			stop_temp_sensor();
 //			http_cleanup(client);
-			disconnect_wifi(netif);
+//			disconnect_wifi(netif);
 			return;
 		}
 
@@ -67,10 +79,18 @@ void vTask_2(void * parameters)
 {
 	while (1)
 	{
-		vTaskSuspend(Task_1);
-		connect_wifi_no_init(void);
-		vTaskResume(Task_2);
-		vTaskSuspend(NULL);
+		if (!task)
+		{
+			vTaskSuspend(NULL);
+		}
+		else
+		{
+			vTaskSuspend(Task_1);
+			connect_wifi_no_init();
+			task = false;
+			vTaskResume(Task_1);
+			vTaskSuspend(NULL);
+		}
 	}
 }
 
@@ -105,28 +125,25 @@ void app_main(void)
 	scan_wifi(NULL, false);
 
 	// Init http connection
-	esp_http_client_handle_t client = http_init();
+//	esp_http_client_handle_t client = http_init();
 
 	// Read the value of the temperature sensor an convert it into string for sending to a server
 	
 
-	ESP_ERROR_CHECK(esp_http_client_set_header(client, "content-type", "text/plain"));
+//	ESP_ERROR_CHECK(esp_http_client_set_header(client, "content-type", "text/plain"));
 
-	// Initialize time
-	// It's a variable that holds the time at which the task was last unblocked
-	// The variable is automatically updated within vTaskDelayUntil().
-	TickType_t time = xTaskGetTickCount();
 
-	// Frequency
-	const TickType_t freq = TIME_PERIOD / portTICK_PERIOD_MS;
-
+	error = xTaskCreate(vTask_2, "CONNECT", STACK_SIZE, NULL, tskIDLE_PRIORITY, &Task_2);
+	configASSERT(Task_2);
+	error = xTaskCreate(vTask_1, "LOOP", STACK_SIZE, NULL, tskIDLE_PRIORITY, &Task_1);
+	configASSERT(Task_1);
 
 	// Free resources of http
 //	http_cleanup(client);
 
 	// Disconnect and free resources of wifi
-	disconnect_wifi(netif);
+//	disconnect_wifi(netif);
 
 	// Destroy list of networks
-	list_destroy(head);
+//	list_destroy(head);
 }

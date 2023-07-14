@@ -32,8 +32,12 @@ int current_try_for_reconnection = 0;
 SemaphoreHandle_t semaphore = NULL;
 
 // Our tasks
-extern Task_Handle_t Task_1;
-extern Task_Handle_t Task_2;
+extern TaskHandle_t Task_1;
+extern TaskHandle_t Task_2;
+extern bool task;
+
+// Indicate if wifi is starting
+bool wifi_start = false;
 
 // Function for connect wifi to a specific ssid
 void connect_wifi(Item * item)
@@ -166,60 +170,67 @@ void event_handler(void * event_handler_arg, esp_event_base_t event_base, int32_
 			// If wifi is disconnected and not stopped, we try to reconnect, else we indicate that wifi is stopped
 			case WIFI_EVENT_STA_DISCONNECTED:
 				ESP_LOGE("Connection Status", "Disconnected");
-				vTaskResumeFromISR(Task_2);
-				if (current_try_for_reconnection < NUMBER_OF_TRY_FOR_RECONNECTION)
+				if (!task && !wifi_start)
 				{
-					if (current_try_for_reconnection == 0)
+					task = true;
+					xTaskResumeFromISR(Task_2);
+				}
+				else
+				{
+					if (current_try_for_reconnection < NUMBER_OF_TRY_FOR_RECONNECTION)
 					{
-						item = head->head;
-						item = scan_wifi(item, true);
-						if (item != NULL)
+						if (current_try_for_reconnection == 0)
 						{
-							item_print(item);
-							current_try_for_reconnection ++;
-							connect_wifi(item);
+							item = head->head;
+							item = scan_wifi(item, true);
+							if (item != NULL)
+							{
+								item_print(item);
+								current_try_for_reconnection ++;
+								connect_wifi(item);
+							}
+							else
+							{
+								ESP_LOGE("Wifi Scan", "We don't find a network available with a known password");
+								current_try_for_reconnection ++;
+							}
+						}
+						else if (item->next != NULL)
+						{
+							item = item->next;
+							item = scan_wifi(item, true);
+							if (item != NULL)
+							{
+								item_print(item);
+								current_try_for_reconnection ++;
+								connect_wifi(item);
+							}
+							else
+							{
+								ESP_LOGE("Wifi Scan", "Retrying connect to wifi...");
+							}
 						}
 						else
 						{
-							ESP_LOGE("Wifi Scan", "We don't find a network available with a known password");
-							current_try_for_reconnection ++;
-						}
-					}
-					else if (item->next != NULL)
-					{
-						item = item->next;
-						item = scan_wifi(item, true);
-						if (item != NULL)
-						{
-							item_print(item);
-							current_try_for_reconnection ++;
-							connect_wifi(item);
-						}
-						else
-						{
-							ESP_LOGE("Wifi Scan", "Retrying connect to wifi...");
+							item = head->head;
+							item = scan_wifi(item, true);
+							if (item != NULL)
+							{
+								item_print(item);
+								current_try_for_reconnection ++;
+								connect_wifi(item);
+							}
+							else
+							{
+								ESP_LOGE("Wifi Scan", "We don't find a network available with a known password");
+								current_try_for_reconnection ++;
+							}
 						}
 					}
 					else
 					{
-						item = head->head;
-						item = scan_wifi(item, true);
-						if (item != NULL)
-						{
-							item_print(item);
-							current_try_for_reconnection ++;
-							connect_wifi(item);
-						}
-						else
-						{
-							ESP_LOGE("Wifi Scan", "We don't find a network available with a known password");
-							current_try_for_reconnection ++;
-						}
+						ESP_LOGE("Connection Status", "Connection failed");
 					}
-				}
-				else
-				{
-					ESP_LOGE("Connection Status", "Connection failed");
 				}
 				break;
 			case WIFI_EVENT_STA_START:
@@ -293,6 +304,9 @@ esp_netif_t * init_wifi(void)
 	// Replace item at the beginning of the list
 	item = head->head;
 
+	// Indicate that wifi is starting
+	wifi_start = true;
+
 	// Start wifi
 	ESP_ERROR_CHECK(esp_wifi_start());
 
@@ -301,6 +315,9 @@ esp_netif_t * init_wifi(void)
 	{
 		ESP_LOGE("Semaphore", "Semaphore don't giving up");
 	}
+
+	// Indicate that wifi isn't starting
+	wifi_start = false;
 
 	return netif;
 
