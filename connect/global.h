@@ -5,5 +5,7 @@
 
 extern Head * head;
 extern Item * item;
+extern bool task_2;
+extern bool quit;
 
 #endif

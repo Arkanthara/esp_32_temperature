@@ -31,11 +31,6 @@ int current_try_for_reconnection = 0;
 // Semaphore used for waiting an ip address
 SemaphoreHandle_t semaphore = NULL;
 
-// Our tasks
-extern TaskHandle_t Task_1;
-extern TaskHandle_t Task_2;
-extern bool task;
-
 // Indicate if wifi is starting
 bool wifi_start = false;
 
@@ -46,7 +41,6 @@ void connect_wifi(Item * item)
 	// Create a config for wifi
 	wifi_config_t config = {};
 
-	printf("Len ssid: %d len password %d\n", item->data->ssid_len, item->data->password_len);
 	memset(config.sta.ssid, 0, sizeof(config.sta.ssid));
 	memset(config.sta.password, 0, sizeof(config.sta.password));
 	strncpy((char *)(config.sta.ssid), item->data->ssid, item->data->ssid_len);
@@ -98,6 +92,7 @@ void connect_wifi_no_init(void)
 	if (xSemaphoreTake(semaphore, WAIT_TIME_FOR_CONNECTION / portTICK_PERIOD_MS) != pdTRUE)
 	{
 		ESP_LOGE("Semaphore", "Semaphore don't giving up");
+		quit = true;
 	}
 }
 
@@ -170,10 +165,9 @@ void event_handler(void * event_handler_arg, esp_event_base_t event_base, int32_
 			// If wifi is disconnected and not stopped, we try to reconnect, else we indicate that wifi is stopped
 			case WIFI_EVENT_STA_DISCONNECTED:
 				ESP_LOGE("Connection Status", "Disconnected");
-				if (!task && !wifi_start)
+				if (!task_2 && !wifi_start)
 				{
-					task = true;
-					xTaskResumeFromISR(Task_2);
+					task_2 = true;
 				}
 				else
 				{
@@ -208,6 +202,19 @@ void event_handler(void * event_handler_arg, esp_event_base_t event_base, int32_
 							else
 							{
 								ESP_LOGE("Wifi Scan", "Retrying connect to wifi...");
+								item = head->head;
+								item = scan_wifi(item, true);
+								if (item != NULL)
+								{
+									item_print(item);
+									current_try_for_reconnection ++;
+									connect_wifi(item);
+								}
+								else
+								{
+									ESP_LOGE("Wifi Scan", "We don't find a network available with a known password");
+									current_try_for_reconnection ++;
+								}
 							}
 						}
 						else
@@ -314,6 +321,7 @@ esp_netif_t * init_wifi(void)
 	if (xSemaphoreTake(semaphore, WAIT_TIME_FOR_CONNECTION / portTICK_PERIOD_MS) != pdTRUE)
 	{
 		ESP_LOGE("Semaphore", "Semaphore don't giving up");
+		quit = true;
 	}
 
 	// Indicate that wifi isn't starting
