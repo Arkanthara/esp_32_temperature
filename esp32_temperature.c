@@ -25,8 +25,7 @@ bool task_2 = false;
 bool quit = false;
 
 
-// We must look after the void * client
-void vTask_1(void * client)
+void vTask_1(void * parameter)
 {
 
 	// Initialize wifi and connect wifi
@@ -37,7 +36,7 @@ void vTask_1(void * client)
 	// scan_wifi(NULL, false);
 
 	// Init http connection
-//	esp_http_client_handle_t client = http_init();
+	esp_http_client_handle_t client = http_init();
 
 	// Initialize time
 	// It's a variable that holds the time at which the task was last unblocked
@@ -78,13 +77,13 @@ void vTask_1(void * client)
 			{
 				ESP_LOGE("Convert", "Failed to convert float to string");
 				stop_temp_sensor();
-//				http_cleanup(client);
+				http_cleanup(client);
 				disconnect_wifi(netif);
 				return;
 			}
 
 			// Send temperature to server
-//			http_post(client, buffer, buffer_len);
+			http_post(client, buffer, buffer_len);
 			
 			// Print temp_sensor
 			printf("Temperature's sensor: %s\n", buffer);
@@ -98,7 +97,7 @@ void vTask_1(void * client)
 	}
 
 	// Free resources of http
-//	http_cleanup(client);
+	http_cleanup(client);
 
 	// Disconnect and free resources of wifi
 	disconnect_wifi(netif);
