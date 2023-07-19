@@ -1,2 +1,8 @@
-idf_component_register(SRCS "esp32_temperature.c" "connect/connect.c" "connect/list.c" "temperature_sensor/temperature.c" "http/http.c"
-                    INCLUDE_DIRS ".")
+set (INCLUDE_COMPONENT
+	.
+	../config
+	)
+
+idf_component_register(SRCS "esp32_temperature.c"
+	INCLUDE_DIRS ${INCLUDE_COMPONENT}
+	REQUIRES http temperature chained_list connect nvs_flash freertos)

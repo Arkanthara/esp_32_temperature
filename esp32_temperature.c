@@ -1,15 +1,15 @@
 #include <stdio.h>
 #include "nvs_flash.h"
 #include "esp_log.h"
-#include "connect/global.h"
-#include "connect/list.h"
-#include "connect/connect.h"
-#include "temperature_sensor/temperature.h"
-#include "http/http.h"
+#include "http.h"
+#include "connect.h"
+#include "list.h"
+#include "temperature.h"
+#include "global.h"
 #include <unistd.h>
 #include "freertos/task.h"
 
-#define TIME_PERIOD 5000
+#define TIME_PERIOD pdMS_TO_TICKS(5000)
 #define STACK_SIZE 4096
 
 // Our global variables
@@ -18,11 +18,9 @@ Item * item;
 
 // Our task
 TaskHandle_t Task_1 = NULL;
-TaskHandle_t Task_2 = NULL;
 
 // Our global variables
-bool task_2 = false;
-bool quit = false;
+bool is_connected = false;
 
 
 void vTask_1(void * parameter)
@@ -38,27 +36,10 @@ void vTask_1(void * parameter)
 	// Init http connection
 	esp_http_client_handle_t client = http_init();
 
-	// Initialize time
-	// It's a variable that holds the time at which the task was last unblocked
-	// The variable is automatically updated within vTaskDelayUntil().
-	TickType_t time = xTaskGetTickCount();
-
-	// Frequency
-	const TickType_t freq = TIME_PERIOD / portTICK_PERIOD_MS;
-
 	// Loop for send each five seconds the sensor's temperature
-	while (1)
+	for( ; ; )
 	{
-		if (quit)
-		{
-			break;
-		}
-		else if (task_2)
-		{
-			vTaskResume(Task_2);
-			vTaskSuspend(NULL);
-		}
-		else
+		if (is_connected)
 		{
 			// Initialize variables
 			float temp;
@@ -91,9 +72,10 @@ void vTask_1(void * parameter)
 			// Stop sensor
 			stop_temp_sensor();
 
-			// Wait the time indicated by macro TIME_PERIOD
-			vTaskDelayUntil(&time, freq);
 		}
+		// Wait before continuing send data
+		ESP_LOGI("Wait", "We are waiting before continuing our code");
+		vTaskDelay(TIME_PERIOD);
 	}
 
 	// Free resources of http
@@ -109,29 +91,6 @@ void vTask_1(void * parameter)
 	vTaskDelete(NULL);
 }
 
-void vTask_2(void * parameters)
-{
-	while (1)
-	{
-		if (quit)
-		{
-			break;
-		}
-		else if (!task_2)
-		{
-			vTaskSuspend(NULL);
-		}
-		else
-		{
-//			vTaskSuspend(Task_1);
-			connect_wifi_no_init();
-			task_2 = false;
-			vTaskResume(Task_1);
-			vTaskSuspend(NULL);
-		}
-	}
-	vTaskDelete(NULL);
-}
 
 void app_main(void)
 {
@@ -152,7 +111,7 @@ void app_main(void)
 	// Add our network
 	list_add(head, "Livebox-4130", "LrKkE5HeSixXowpGgb", 1);
 	list_add(head, "Test", "JbAeJdA!",5);
-	list_add(head, "WIFI_Mobile", "428fdcf3d44d5e92a54d1ca5579d21416be03291895184d724abf652f24a",4);
+	list_add(head, "WIFI_Mobile", "428fdcf3d44d5e92a54d1ca5579d21416be03291895184d724abf652f24a", 4);
 	list_add(head, "Nolan", "JbNdIlY!", 6);
 	list_print(head);
 
@@ -160,8 +119,6 @@ void app_main(void)
 //	ESP_ERROR_CHECK(esp_http_client_set_header(client, "content-type", "text/plain"));
 
 
-	error = xTaskCreate(vTask_2, "CONNECT", STACK_SIZE, NULL, tskIDLE_PRIORITY, &Task_2);
-	configASSERT(Task_2);
 	error = xTaskCreate(vTask_1, "LOOP", STACK_SIZE, NULL, tskIDLE_PRIORITY, &Task_1);
 	configASSERT(Task_1);
 
